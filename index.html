@@ -358,9 +358,9 @@
       </div>
     </details>
 
-    <button class="print-btn" onclick="window.print()">印刷 / PDFで保存</button>
+    <button class="print-btn" onclick="handlePrint()">印刷 / PDFで保存</button>
     <button class="clear-btn" onclick="clearDraft()">入力内容をクリア</button>
-    <div class="version-label">請求書ジェネレーター v1.5</div>
+    <div class="version-label">請求書ジェネレーター v1.6</div>
   </div>
 
   <div class="preview-wrap">
@@ -600,6 +600,23 @@ document.getElementById('bankAccountNo').value = (draft && draft.bankAccountNo) 
 
 renderItemsForm();
 renderPreview();
+
+// iOS Safari freezes touch input on the page after window.print() is called
+// from inside an iframe (e.g. when this app is embedded in a portal site).
+// Work around it by opening a standalone tab to print from instead.
+function handlePrint(){
+  if(window.self !== window.top){
+    const url = new URL(location.href);
+    url.searchParams.set('print', '1');
+    window.open(url.toString(), '_blank');
+  } else {
+    window.print();
+  }
+}
+
+if(new URLSearchParams(location.search).get('print') === '1'){
+  setTimeout(()=>window.print(), 300);
+}
 </script>
 </body>
 </html>
