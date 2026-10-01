@@ -127,6 +127,18 @@
     letter-spacing:0.03em;
   }
   .print-btn:hover{ background:#c91169; }
+  .clear-btn{
+    width:100%;
+    padding:9px;
+    background:none;
+    color:#999;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:12px;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  .clear-btn:hover{ color:var(--pink); border-color:var(--pink); background:#FDF0F6; }
   .version-label{
     text-align:center;
     font-size:10px;
@@ -264,7 +276,10 @@
       <div class="field"><label>請求書番号</label><input type="text" id="invoiceNo"></div>
     </div>
     <div class="field"><label>宛先（会社名・敬称込み）</label><input type="text" id="clientName" placeholder="例：株式会社〇〇〇 御中"></div>
-    <div class="field"><label>支払期限</label><input type="date" id="dueDate"></div>
+    <div class="row2">
+      <div class="field"><label>支払期限</label><input type="date" id="dueDate"></div>
+      <div class="field"><label>消費税率（%）</label><input type="number" id="taxRate" min="0" max="100" step="0.1"></div>
+    </div>
 
     <h2>明細</h2>
     <div id="items"></div>
@@ -293,7 +308,8 @@
     </details>
 
     <button class="print-btn" onclick="window.print()">印刷 / PDFで保存</button>
-    <div class="version-label">請求書ジェネレーター v1.0</div>
+    <button class="clear-btn" onclick="clearDraft()">入力内容をクリア</button>
+    <div class="version-label">請求書ジェネレーター v1.1</div>
   </div>
 
   <div class="preview-wrap">
@@ -314,11 +330,13 @@
 
       <table class="items">
         <thead>
-          <tr><th>日付</th><th>内容</th><th class="num">数量</th><th class="num">単価</th><th class="num">金額</th></tr>
+          <tr><th>日付</th><th>内容</th><th class="num">数量</th><th class="num">単価（税別）</th><th class="num">金額</th></tr>
         </thead>
         <tbody id="outItems"></tbody>
         <tfoot>
-          <tr class="total-row"><td colspan="4" style="text-align:right;">合計</td><td class="num"><span id="outTotal2">0</span>円</td></tr>
+          <tr><td colspan="4" style="text-align:right;">小計（税抜）</td><td class="num"><span id="outSubtotal">0</span>円</td></tr>
+          <tr><td colspan="4" style="text-align:right;">消費税（<span id="outTaxRateLabel">10</span>%）</td><td class="num"><span id="outTaxAmount">0</span>円</td></tr>
+          <tr class="total-row"><td colspan="4" style="text-align:right;">ご請求金額（税込）</td><td class="num"><span id="outTotal2">0</span>円</td></tr>
         </tfoot>
       </table>
 
@@ -351,8 +369,36 @@ const defaults = {
   bankName:"千葉銀行",
   bankBranchName:"新松戸支店",
   bankAccountType:"普通",
-  bankAccountNo:"3845655"
+  bankAccountNo:"3845655",
+  taxRate:10
 };
+
+const STORAGE_KEY = 'invoiceGeneratorDraft_v1';
+
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function saveDraft(){
+  try{
+    const fieldIds = ['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo'];
+    const data = { items };
+    fieldIds.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) data[id] = el.value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){ /* storage unavailable - ignore */ }
+}
+
+function clearDraft(){
+  if(!confirm('入力した内容をすべて消去して、まっさらな状態に戻します。よろしいですか？')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  location.reload();
+}
 
 function fmt(n){ return Number(n||0).toLocaleString('ja-JP'); }
 function fmtDate(iso){
@@ -376,7 +422,7 @@ function renderItemsForm(){
       <div class="field"><label>内容</label><input type="text" value="${it.content}" placeholder="例：体育指導料" onchange="updateItem(${idx},'content',this.value)"></div>
       <div class="row2">
         <div class="field"><label>数量</label><input type="number" value="${it.qty}" onchange="updateItem(${idx},'qty',this.value)"></div>
-        <div class="field"><label>単価</label><input type="number" value="${it.price}" onchange="updateItem(${idx},'price',this.value)"></div>
+        <div class="field"><label>単価（税別）</label><input type="number" value="${it.price}" onchange="updateItem(${idx},'price',this.value)"></div>
       </div>
     `;
     wrap.appendChild(div);
@@ -431,10 +477,10 @@ function renderPreview(){
 
   const tbody = document.getElementById('outItems');
   tbody.innerHTML = '';
-  let total = 0;
+  let subtotal = 0;
   items.forEach(it => {
     const amount = (Number(it.qty)||0) * (Number(it.price)||0);
-    total += amount;
+    subtotal += amount;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${it.date ? fmtDateSlash(it.date) : ''}</td>
@@ -445,8 +491,17 @@ function renderPreview(){
     `;
     tbody.appendChild(tr);
   });
-  document.getElementById('outTotal').textContent = fmt(total);
-  document.getElementById('outTotal2').textContent = fmt(total);
+  const taxRate = Number(document.getElementById('taxRate').value);
+  const taxRateValue = isNaN(taxRate) ? defaults.taxRate : taxRate;
+  const taxAmount = Math.round(subtotal * taxRateValue / 100);
+  const grandTotal = subtotal + taxAmount;
+  document.getElementById('outSubtotal').textContent = fmt(subtotal);
+  document.getElementById('outTaxRateLabel').textContent = fmt(taxRateValue);
+  document.getElementById('outTaxAmount').textContent = fmt(taxAmount);
+  document.getElementById('outTotal').textContent = fmt(grandTotal);
+  document.getElementById('outTotal2').textContent = fmt(grandTotal);
+
+  saveDraft();
 }
 
 function fmtDateSlash(iso){
@@ -454,21 +509,27 @@ function fmtDateSlash(iso){
   return `${y}/${Number(m)}/${Number(d)}`;
 }
 
-// init defaults
-document.getElementById('issueDate').value = new Date().toISOString().slice(0,10);
-document.getElementById('invoiceNo').value = new Date().toISOString().slice(0,10).replace(/-/g,'') + '01';
-document.getElementById('clientName').value = '';
-document.getElementById('notes').value = '';
-document.getElementById('companyName').value = defaults.companyName;
-document.getElementById('companyZip').value = defaults.companyZip;
-document.getElementById('companyAddress').value = defaults.companyAddress;
-document.getElementById('companyTel').value = defaults.companyTel;
-document.getElementById('bankName').value = defaults.bankName;
-document.getElementById('bankBranchName').value = defaults.bankBranchName;
-document.getElementById('bankAccountType').value = defaults.bankAccountType;
-document.getElementById('bankAccountNo').value = defaults.bankAccountNo;
+// init defaults (restore from localStorage draft if one exists)
+const draft = loadDraft();
+if(draft && Array.isArray(draft.items) && draft.items.length){
+  items = draft.items;
+}
+document.getElementById('issueDate').value = (draft && draft.issueDate) || new Date().toISOString().slice(0,10);
+document.getElementById('invoiceNo').value = (draft && draft.invoiceNo) || (new Date().toISOString().slice(0,10).replace(/-/g,'') + '01');
+document.getElementById('clientName').value = (draft && draft.clientName) || '';
+document.getElementById('dueDate').value = (draft && draft.dueDate) || '';
+document.getElementById('taxRate').value = (draft && draft.taxRate) || defaults.taxRate;
+document.getElementById('notes').value = (draft && draft.notes) || '';
+document.getElementById('companyName').value = (draft && draft.companyName) || defaults.companyName;
+document.getElementById('companyZip').value = (draft && draft.companyZip) || defaults.companyZip;
+document.getElementById('companyAddress').value = (draft && draft.companyAddress) || defaults.companyAddress;
+document.getElementById('companyTel').value = (draft && draft.companyTel) || defaults.companyTel;
+document.getElementById('bankName').value = (draft && draft.bankName) || defaults.bankName;
+document.getElementById('bankBranchName').value = (draft && draft.bankBranchName) || defaults.bankBranchName;
+document.getElementById('bankAccountType').value = (draft && draft.bankAccountType) || defaults.bankAccountType;
+document.getElementById('bankAccountNo').value = (draft && draft.bankAccountNo) || defaults.bankAccountNo;
 
-['issueDate','invoiceNo','clientName','dueDate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo'].forEach(id=>{
+['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderPreview);
   document.getElementById(id).addEventListener('change', renderPreview);
 });
