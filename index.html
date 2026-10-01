@@ -58,6 +58,18 @@
   .field textarea{ resize:vertical; }
   .row2{ display:flex; gap:8px; }
   .row2 > div{ flex:1; }
+  .checkbox-field label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--dark);
+    cursor:pointer;
+  }
+  .checkbox-field input[type="checkbox"]{
+    width:auto;
+    margin:0;
+  }
   details{
     margin-bottom:16px;
     border:1px solid var(--border);
@@ -331,6 +343,9 @@
       <div class="field"><label>支払期限</label><input type="date" id="dueDate"></div>
       <div class="field"><label>消費税率（%）</label><input type="number" id="taxRate" min="0" max="100" step="0.1"></div>
     </div>
+    <div class="field checkbox-field">
+      <label><input type="checkbox" id="showLogo"> ロゴを表示する</label>
+    </div>
 
     <h2>明細</h2>
     <div id="items"></div>
@@ -356,11 +371,12 @@
         </div>
         <div class="field"><label>口座番号</label><input type="text" id="bankAccountNo" placeholder="例：3845655"></div>
       </div>
+      <div class="field"><label>口座名義</label><input type="text" id="bankAccountHolder" placeholder="未入力の場合は会社名を表示"></div>
     </details>
 
     <button class="print-btn" onclick="handlePrint()">印刷 / PDFで保存</button>
     <button class="clear-btn" onclick="clearDraft()">入力内容をクリア</button>
-    <div class="version-label">請求書ジェネレーター v1.6</div>
+    <div class="version-label">請求書ジェネレーター v1.7</div>
   </div>
 
   <div class="preview-wrap">
@@ -446,12 +462,13 @@ function loadDraft(){
 
 function saveDraft(){
   try{
-    const fieldIds = ['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo'];
+    const fieldIds = ['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo','bankAccountHolder'];
     const data = { items };
     fieldIds.forEach(id=>{
       const el = document.getElementById(id);
       if(el) data[id] = el.value;
     });
+    data.showLogo = document.getElementById('showLogo').checked;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }catch(e){ /* storage unavailable - ignore */ }
 }
@@ -526,8 +543,9 @@ function renderPreview(){
   const bankBranchName = document.getElementById('bankBranchName').value || defaults.bankBranchName;
   const bankAccountType = document.getElementById('bankAccountType').value || defaults.bankAccountType;
   const bankAccountNo = document.getElementById('bankAccountNo').value || defaults.bankAccountNo;
+  const bankAccountHolder = document.getElementById('bankAccountHolder').value || companyName;
 
-  document.getElementById('outCompanyName1').textContent = companyName;
+  document.getElementById('outCompanyName1').textContent = bankAccountHolder;
   document.getElementById('outCompanyName2').textContent = companyName;
   document.getElementById('outCompanyAddress').textContent = `〒${companyZip} ${companyAddress}`;
   document.getElementById('outCompanyTel').textContent = companyTel;
@@ -565,6 +583,8 @@ function renderPreview(){
   document.getElementById('outTotal').textContent = fmt(grandTotal);
   document.getElementById('outTotal2').textContent = fmt(grandTotal);
 
+  document.querySelector('.logo-wrap').style.display = document.getElementById('showLogo').checked ? '' : 'none';
+
   saveDraft();
 }
 
@@ -592,8 +612,10 @@ document.getElementById('bankName').value = (draft && draft.bankName) || default
 document.getElementById('bankBranchName').value = (draft && draft.bankBranchName) || defaults.bankBranchName;
 document.getElementById('bankAccountType').value = (draft && draft.bankAccountType) || defaults.bankAccountType;
 document.getElementById('bankAccountNo').value = (draft && draft.bankAccountNo) || defaults.bankAccountNo;
+document.getElementById('bankAccountHolder').value = (draft && draft.bankAccountHolder) || '';
+document.getElementById('showLogo').checked = (draft && typeof draft.showLogo === 'boolean') ? draft.showLogo : true;
 
-['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo'].forEach(id=>{
+['issueDate','invoiceNo','clientName','dueDate','taxRate','notes','companyName','companyZip','companyAddress','companyTel','bankName','bankBranchName','bankAccountType','bankAccountNo','bankAccountHolder','showLogo'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderPreview);
   document.getElementById(id).addEventListener('change', renderPreview);
 });
