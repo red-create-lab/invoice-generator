@@ -250,30 +250,43 @@
     font-weight:bold;
     color:var(--pink);
   }
-  .info-grid{
-    display:flex;
-    gap:16px;
+  .notes-band{
+    background:#FBF6F9;
+    border-left:3px solid var(--pink);
+    border-radius:4px;
+    padding:10px 14px;
     margin-top:20px;
+    margin-bottom:14px;
   }
-  .info-card{
-    flex:1;
-    background:#FAFAFA;
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:14px 16px;
-  }
-  .info-title{
-    font-size:12px;
+  .notes-title{
+    font-size:11px;
     font-weight:bold;
     color:var(--pink);
-    margin-bottom:8px;
-    padding-bottom:6px;
+    margin-bottom:4px;
+  }
+  .notes-body{
+    font-size:12px;
+    line-height:1.8;
+    white-space:pre-line;
+  }
+  .bank-card{
+    width:170px;
+    background:#FAFAFA;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+  }
+  .bank-title{
+    font-size:11px;
+    font-weight:bold;
+    color:var(--pink);
+    margin-bottom:6px;
+    padding-bottom:5px;
     border-bottom:1px solid var(--border);
   }
-  .info-body{
+  .bank-body{
     font-size:12px;
-    line-height:1.9;
-    white-space:pre-line;
+    line-height:1.8;
   }
   .info-row{
     display:flex;
@@ -347,7 +360,7 @@
 
     <button class="print-btn" onclick="window.print()">印刷 / PDFで保存</button>
     <button class="clear-btn" onclick="clearDraft()">入力内容をクリア</button>
-    <div class="version-label">請求書ジェネレーター v1.3</div>
+    <div class="version-label">請求書ジェネレーター v1.4</div>
   </div>
 
   <div class="preview-wrap">
@@ -386,20 +399,19 @@
         </tfoot>
       </table>
 
-      <div class="info-grid">
-        <div class="info-card">
-          <div class="info-title">備考</div>
-          <div class="info-body" id="outNotes"></div>
-        </div>
-        <div class="info-card">
-          <div class="info-title">振込先</div>
-          <div class="info-body">
-            <div class="info-row"><span class="label">銀行</span><span id="outBankNameOnly"></span></div>
-            <div class="info-row"><span class="label">支店</span><span id="outBankBranchOnly"></span></div>
-            <div class="info-row"><span class="label">口座種別</span><span id="outBankTypeOnly"></span></div>
-            <div class="info-row"><span class="label">口座番号</span><span id="outBankNoOnly"></span></div>
-            <div class="info-row"><span class="label">口座名義</span><span id="outCompanyName1"></span></div>
-          </div>
+      <div class="notes-band">
+        <div class="notes-title">備考</div>
+        <div class="notes-body" id="outNotes"></div>
+      </div>
+
+      <div class="bank-card">
+        <div class="bank-title">振込先</div>
+        <div class="bank-body">
+          <div class="info-row"><span class="label">銀行</span><span id="outBankNameOnly"></span></div>
+          <div class="info-row"><span class="label">支店</span><span id="outBankBranchOnly"></span></div>
+          <div class="info-row"><span class="label">種別</span><span id="outBankTypeOnly"></span></div>
+          <div class="info-row"><span class="label">番号</span><span id="outBankNoOnly"></span></div>
+          <div class="info-row"><span class="label">名義</span><span id="outCompanyName1"></span></div>
         </div>
       </div>
     </div>
