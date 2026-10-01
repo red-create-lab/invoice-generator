@@ -243,20 +243,46 @@
     border-bottom:none;
     font-weight:bold;
   }
-  .section-title{
+  .due-line{
+    margin:-14px 0 24px;
+    text-align:right;
     font-size:12px;
     font-weight:bold;
-    margin:16px 0 4px;
+    color:var(--pink);
   }
-  .section-body{
+  .info-grid{
+    display:flex;
+    gap:16px;
+    margin-top:20px;
+  }
+  .info-card{
+    flex:1;
+    background:#FAFAFA;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .info-title{
     font-size:12px;
-    line-height:1.7;
+    font-weight:bold;
+    color:var(--pink);
+    margin-bottom:8px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--border);
+  }
+  .info-body{
+    font-size:12px;
+    line-height:1.9;
     white-space:pre-line;
   }
-  .due-line{
-    margin-top:20px;
-    font-size:12px;
-    font-weight:bold;
+  .info-row{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .info-row .label{
+    color:#888;
+    flex-shrink:0;
   }
   @media print{
     *{
@@ -321,7 +347,7 @@
 
     <button class="print-btn" onclick="window.print()">印刷 / PDFで保存</button>
     <button class="clear-btn" onclick="clearDraft()">入力内容をクリア</button>
-    <div class="version-label">請求書ジェネレーター v1.2</div>
+    <div class="version-label">請求書ジェネレーター v1.3</div>
   </div>
 
   <div class="preview-wrap">
@@ -346,6 +372,7 @@
         <div class="amount-head">ご請求金額（税込）</div>
         <div class="amount-value">¥<span id="outTotal">0</span></div>
       </div>
+      <div class="due-line" id="outDueLine"></div>
 
       <table class="items">
         <thead>
@@ -359,13 +386,22 @@
         </tfoot>
       </table>
 
-      <div class="section-title">備考</div>
-      <div class="section-body" id="outNotes"></div>
-
-      <div class="section-title" style="margin-top:16px;">振込先</div>
-      <div class="section-body"><span id="outBankBranch"></span><br><span id="outBankAccount"></span><br><span id="outCompanyName1"></span></div>
-
-      <div class="due-line" id="outDueLine"></div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-title">備考</div>
+          <div class="info-body" id="outNotes"></div>
+        </div>
+        <div class="info-card">
+          <div class="info-title">振込先</div>
+          <div class="info-body">
+            <div class="info-row"><span class="label">銀行</span><span id="outBankNameOnly"></span></div>
+            <div class="info-row"><span class="label">支店</span><span id="outBankBranchOnly"></span></div>
+            <div class="info-row"><span class="label">口座種別</span><span id="outBankTypeOnly"></span></div>
+            <div class="info-row"><span class="label">口座番号</span><span id="outBankNoOnly"></span></div>
+            <div class="info-row"><span class="label">口座名義</span><span id="outCompanyName1"></span></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -483,8 +519,10 @@ function renderPreview(){
   document.getElementById('outCompanyName2').textContent = companyName;
   document.getElementById('outCompanyAddress').textContent = `〒${companyZip} ${companyAddress}`;
   document.getElementById('outCompanyTel').textContent = companyTel;
-  document.getElementById('outBankBranch').textContent = `${bankName} ${bankBranchName}`;
-  document.getElementById('outBankAccount').textContent = `${bankAccountType} ${bankAccountNo}`;
+  document.getElementById('outBankNameOnly').textContent = bankName;
+  document.getElementById('outBankBranchOnly').textContent = bankBranchName;
+  document.getElementById('outBankTypeOnly').textContent = bankAccountType;
+  document.getElementById('outBankNoOnly').textContent = bankAccountNo;
 
   const due = document.getElementById('dueDate').value;
   document.getElementById('outDueLine').textContent = due ? `支払期限：${fmtDate(due)}` : '';
